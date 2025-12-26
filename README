@@ -1,0 +1,48 @@
+==========================================================
+                      VFS-PIPE
+==========================================================
+
+WHAT IS THIS?
+VFS-Pipe is a lightweight C header that exposes your 
+program's internal variables as real files in the Linux 
+filesystem.
+
+It creates a "live bridge" between your running C code 
+and the shell. If you have a variable 'int status', it 
+appears as /tmp/vfs/status.
+- View real-time data: cat /tmp/vfs/status
+- Update settings live: echo 1 > /tmp/vfs/status
+
+It uses FUSE (Filesystem in Userspace) to run a 
+background thread, allowing for zero-latency 
+communication without interrupting your main logic.
+
+WHY USE IT?
+- Live Debugging: Monitor internal state without logs.
+- Easy IPC: Any language (Python, Bash, Node.js) can 
+  control your C app by simply reading/writing files.
+- Zero Infrastructure: No sockets, no local servers, 
+  and no databases required.
+- High Performance: Reads/writes happen directly in 
+  your program's memory.
+
+USE CASES:
+- System Daemons: Change logging levels on the fly.
+- Robotics/IoT: Monitor sensor data in real-time.
+- Simulation: Adjust parameters without restarting.
+- Game Servers: Track player counts and server health.
+
+HOW TO BUILD:
+1. Install FUSE: sudo apt install libfuse-dev pkgconf
+2. Compile: gcc main.c -o app -D_FILE_OFFSET_BITS=64 -lfuse -lpthread
+
+HOW TO USE IN CODE:
+   vfs_init("/tmp/vfs");
+   vfs_register_int("worker_count", &workers);
+   vfs_register_str("app_status",   status_buffer);
+
+LICENSE:
+MIT License - Open for all.
+
+Written by Nouridin.
+==========================================================

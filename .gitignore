@@ -1,0 +1,13 @@
+# Compiled binaries
+example
+vfs_exe
+*.o
+
+# FUSE temp files
+/tmp/vfs
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+.vscode/
