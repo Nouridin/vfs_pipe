@@ -25,14 +25,15 @@ typedef enum { VFS_INT, VFS_STRING } vfs_type;
 typedef struct 
 {
     char      name[64];                           
-    void * ptr;      // Changed to void* to be generic
-    vfs_type  type;     // Track if this entry is an INT or STRING
+    void * ptr;      
+    vfs_type  type;     
 } vfs_entry;
 
 static vfs_entry * registry        = NULL;
-static int          entry_count     = 0;
-static int          entry_capacity  = 0;
+static int         entry_count     = 0;
+static int         entry_capacity  = 0;
 
+/* Internal helper to find a registered variable index by its filename */
 static int find_entry(const char * path) 
 {
     for (int i = 0; i < entry_count; i++) {
@@ -43,6 +44,7 @@ static int find_entry(const char * path)
 
 // --- FUSE CALLBACKS ---
 
+/* Defines file/directory metadata (permissions, type, and size) */
 static int vfs_getattr(const char * path, struct stat * stbuf) 
 {
     memset(stbuf, 0, sizeof(struct stat));
@@ -55,12 +57,13 @@ static int vfs_getattr(const char * path, struct stat * stbuf)
     if (find_entry(path) != -1) {
         stbuf->st_mode = S_IFREG | 0666;
         stbuf->st_nlink = 1;
-        stbuf->st_size = 256; // Bigger buffer for strings
+        stbuf->st_size = 256; 
         return 0;
     }
     return -ENOENT;
 }
 
+/* Lists the virtual files when a user runs 'ls' on the mount point */
 static int vfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info * fi) 
 {
     filler(buf, ".", NULL, 0);
@@ -71,6 +74,7 @@ static int vfs_readdir(const char * path, void * buf, fuse_fill_dir_t filler, of
     return 0;
 }
 
+/* Converts the C variable to a string and serves it to the user (cat) */
 static int vfs_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * fi) 
 {
     int idx = find_entry(path);
@@ -79,7 +83,6 @@ static int vfs_read(const char * path, char * buf, size_t size, off_t offset, st
     char str[256];
     int len;
 
-    // Logic Switch: Handle based on type
     if (registry[idx].type == VFS_INT) {
         len = sprintf(str, "%d\n", *(int*)(registry[idx].ptr));
     } else {
@@ -94,6 +97,7 @@ static int vfs_read(const char * path, char * buf, size_t size, off_t offset, st
     return 0;
 }
 
+/* Parses user input (echo) and updates the C variable in memory */
 static int vfs_write(const char * path, const char * buf, size_t size, off_t offset, struct fuse_file_info * fi) 
 {
     int idx = find_entry(path);
@@ -104,11 +108,9 @@ static int vfs_write(const char * path, const char * buf, size_t size, off_t off
     memcpy(tmp, buf, copy_size);
     tmp[copy_size] = '\0';
 
-    // Logic Switch: Handle based on type
     if (registry[idx].type == VFS_INT) {
         *(int*)(registry[idx].ptr) = atoi(tmp);
     } else {
-        // Strip the newline often added by 'echo'
         if (tmp[strlen(tmp)-1] == '\n') tmp[strlen(tmp)-1] = '\0';
         strcpy((char*)(registry[idx].ptr), tmp);
     }
@@ -116,6 +118,7 @@ static int vfs_write(const char * path, const char * buf, size_t size, off_t off
     return size;
 }
 
+/* Necessary for 'echo' and redirection to work properly on existing files */
 static int vfs_truncate(const char * path, off_t size) 
 {
     return (find_entry(path) != -1) ? 0 : -ENOENT;
@@ -132,6 +135,7 @@ static struct fuse_operations vfs_oper =
 
 // --- API ---
 
+/* Dynamically expands the registry array as more variables are added */
 static void vfs_grow_if_needed()
 {
     if (entry_count >= entry_capacity) {
@@ -140,6 +144,7 @@ static void vfs_grow_if_needed()
     }
 }
 
+/* Adds an integer variable to the virtual filesystem */
 void vfs_register_int(const char * name, int * var_ptr) 
 {
     vfs_grow_if_needed();
@@ -151,6 +156,7 @@ void vfs_register_int(const char * name, int * var_ptr)
     }
 }
 
+/* Adds a string buffer variable to the virtual filesystem */
 void vfs_register_str(const char * name, char * var_ptr) 
 {
     vfs_grow_if_needed();
@@ -162,6 +168,7 @@ void vfs_register_str(const char * name, char * var_ptr)
     }
 }
 
+/* Internal worker thread that handles the FUSE event loop */
 void * vfs_thread_func(void * arg) 
 {
     char * argv[] = {"vfs_exe", "-f", (char*)arg, NULL};
@@ -169,6 +176,7 @@ void * vfs_thread_func(void * arg)
     return NULL;
 }
 
+/* Mounts the VFS and starts the background monitoring thread */
 void vfs_init(char * path) 
 {
     char cleanup_cmd[128];
@@ -179,6 +187,7 @@ void vfs_init(char * path)
     pthread_create(&thread, NULL, vfs_thread_func, strdup(path));
 }
 
+/* Safely unmounts the VFS and frees allocated registry memory */
 void vfs_cleanup(char * path)
 {
     char command[128];
