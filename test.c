@@ -1,34 +1,33 @@
-#include "vfs_pipe.h"
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h> // for sleep()
 
-int main() 
-{
-    int kills  = 0;
-    int deaths = 0;
-    int hp     = 100;
-    char * path = "/tmp/vfs";
+// 1. Define the implementation macro BEFORE including the header
+#define VFS_PIPE_IMPLM
+#include "vfs_pipe.h"
 
-    system("mkdir -p /tmp/vfs");
-    
-    vfs_init(path);
-    vfs_register("player_kills",  &kills);
-    vfs_register("player_deaths", &deaths);
-    vfs_register("player_hp",     &hp);
+int main() {
+    // 2. Define some local variables to track
+    int health = 100;
+    char status[64] = "Patrolling";
 
-    printf("Check your files in: %s\n", path);
-    printf("Try: watch -n 0.5 'ls -l %s && cat %s/*'\n", path, path);
+    // 3. Register them with our VFS
+    vfs_register_int("player_health", &health);
+    vfs_register_str("player_status", status, sizeof(status));
 
-    while (1) 
-    {
-        kills++;
-        if (kills % 5 == 0) deaths++;
-        hp = rand() % 100; // Randomize HP to see it jump
-        
-        usleep(500000); // Update every 0.5 seconds
+    // 4. Mount the VFS to a folder named 'mnt'
+    // Make sure the 'mnt' directory exists.
+    printf("Mounting VFS to ./mnt...\n");
+    vfs_init("./mnt");
+
+    // 5. Loop and print the variables to see them change in real-time.
+    printf("VFS is running. Try 'cat mnt/player_health' or 'echo 50 > mnt/player_health'\n");
+    printf("Press Ctrl+C to stop.\n");
+
+    while(1) {
+        printf("\r[LIVE DATA] Health: %d | Status: %s   ", health, status);
+        fflush(stdout);
+        sleep(1);
     }
 
-    vfs_cleanup(path);
     return 0;
 }
