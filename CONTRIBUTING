@@ -1,0 +1,78 @@
+CONTRIBUTING TO VFS-PIPE
+=======================
+
+First off, thank you for considering contributing to VFS-PIPE! It is
+projects like this that thrive on community feedback and improvements.
+
+As this is a specialized C library interacting with FUSE (Filesystem
+in Userspace), please keep the following guidelines in mind when
+submitting changes.
+
+I. PHILOSOPHY
+-------------
+VFS-PIPE is designed to be a lightweight, "drop-in" single-header
+utility. The goal is to provide a bridge between memory-resident
+variables and the shell without adding heavy dependencies or
+complex configuration.
+
+II. HOW TO CONTRIBUTE
+---------------------
+
+1. Reporting Bugs
+   - Check if the bug is reproducible with the latest version.
+   - Provide a minimal C example that demonstrates the issue.
+   - Mention your OS and FUSE version (e.g., FUSE 2.9.x on Ubuntu).
+
+2. Feature Requests
+   - Open an issue to discuss the feature before implementing it.
+   - We prefer features that remain within the scope of "variable
+     tracking" rather than turning the project into a full-blown
+     virtual disk manager.
+
+3. Pull Requests
+   - Create a feature branch for your changes.
+   - Ensure the code compiles without warnings (use -Wall -Wextra).
+   - Update the "VFS_PIPE_IMPLM" section if the logic changes.
+   - Maintain the single-header format.
+
+III. CODING STANDARDS
+---------------------
+To keep the codebase consistent, please follow these conventions:
+
+- Language: Standard C (C99 or later).
+- Indentation: Use spaces (4 spaces) rather than tabs.
+- Naming:
+    * Public API functions start with "vfs_".
+    * Internal helpers use snake_case.
+    * Macros and Enums use UPPER_SNAKE_CASE.
+- Locking: Always ensure "vfs_lock" is handled correctly in new
+  callbacks to prevent race conditions between the FUSE thread
+  and the main application thread.
+- Portability: While FUSE is primarily Linux-based, try to avoid
+  non-standard GCC extensions that might break on Clang or other
+  compilers.
+
+IV. TESTING YOUR CHANGES
+------------------------
+Since this library involves mounting filesystems, manual testing is
+required. Before submitting a PR, ensure that:
+
+1. The variable registers correctly.
+2. 'cat <mountpoint>/variable' returns the expected value.
+3. 'echo "value" > <mountpoint>/variable' updates the C variable.
+4. 'vfs_cleanup' successfully unmounts the directory without
+   leaving zombie processes.
+5. Valgrind shows no memory leaks in the registry allocation logic.
+
+V. LICENSE
+----------
+By contributing to VFS-PIPE, you agree that your contributions will
+be licensed under the project's MIT License.
+
+VI. CONTACT
+-----------
+If you have questions, please reach out to Nouridin or open a
+discussion in the project repository.
+
+----------------------------------------------------------
+Thank you for helping make VFS-PIPE better!

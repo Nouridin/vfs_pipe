@@ -143,15 +143,24 @@ static int vfs_write(const char * path, const char * buf, size_t size, off_t off
         return -ENOENT;
     }
 
-    char tmp[256];
+    char        tmp[256];
+    char *      endptr;
+    long int    parsed;
+
     size_t copy_size = (size < sizeof(tmp)-1) ? size : sizeof(tmp)-1;
     memcpy(tmp, buf, copy_size);
     tmp[copy_size] = '\0';
 
     if (registry[idx].type == VFS_INT) {
-        *(int*)(registry[idx].ptr) = atoi(tmp);
+        parsed = strtol(tmp, &endptr, 10);
+        if (*endptr != '\0' && *endptr != '\n' && *endptr != '\r') {
+            pthread_mutex_unlock(&vfs_lock);
+            return -EINVAL;
+        }
+        *(int*)(registry[idx].ptr) = parsed;
     } else {
-        if (tmp[strlen(tmp)-1] == '\n') tmp[strlen(tmp)-1] = '\0';
+        size_t len = strlen(tmp);
+        if (len > 0 && tmp[len-1] == '\n') tmp[len-1] = '\0';
         strncpy((char*)(registry[idx].ptr), tmp, registry[idx].max_len - 1);
         ((char*)(registry[idx].ptr))[registry[idx].max_len - 1] = '\0';
     }
